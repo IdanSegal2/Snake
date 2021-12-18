@@ -21,23 +21,18 @@ class Board:
         self.add_snake_to_board()
         # bomb object of the class Bomb
         self.bomb = Bomb.Bomb()
-        # Adds new bomb to game
-        self.add_bomb = Bomb.new_bomb
-        # max_time: time that current bomb explodes
-        self.max_time = self.bomb.get_time()
-        # time_left: the time of current bomb explosion reached
-        self.current_time = 0
-        # max_radius: max radius of the last bomb added to he board
-        self.max_radius = self.bomb.get_radius()
-        # current_radius: the radius current explosion reached
-        self.current_radius = 1
-        # apple object of the class Apple
-        self.apple = Apple.Apple()
-        # Adds a new apple to the game
-        self.add_apple = self.apple.new_apple
-        # Apples: list of apples on board, each apple appears as dictionary
-        # in the form {(x, y) : score}
+        # # max_time: time that current bomb explodes
+        # self.max_time = self.bomb.get_time()
+        # # time_left: the time of current bomb explosion reached
+        # self.current_time = 0
+        # # max_radius: max radius of the last bomb added to he board
+        # self.max_radius = self.bomb.get_radius()
+        # # current_radius: the radius current explosion reached
+        # self.current_radius = 0
+        # # list of all the apples on the board
         self.apples_on_board = []
+        # Apples: ensure valid list of apples
+        self.maintain_apples()
         # Game score
         self.total_score = 0
 
@@ -77,18 +72,23 @@ class Board:
         # if there's an apple on the new cell, add growing turns
         elif self.board[head_x][head_y] == 'apple':
             self.growing_turns_left += 3
-            self.total_score += self.apples_on_board.get((head_x, head_y))
-            self.apples_on_board.remove((head_x, head_y))
-            self.add_apple_to_board()
-            return True
+            return self.replace_apple(head_x, head_y)
 
         # if there's a bomb or another part of the snake, return False
         elif self.board[head_x][head_y] is not None:
             return False
-
         # if succeeded, set prev snake to current one and return true
         self.prev_snake = self.snake
         return True
+
+    def replace_apple(self, x, y):
+        for apple in self.apples_on_board:
+            x_apple, y_apple = apple.get_apple_coord()
+            if x == x_apple and y == y_apple:
+                score = apple.get_apple_score()
+                self.apples_on_board.remove(apple)
+        self.total_score += score
+        return self.maintain_apples()
 
     def get_board(self):
         """Returns list of lists which represents the board"""
@@ -105,27 +105,31 @@ class Board:
             self.board[old_tail[0]][old_tail[1]] = None
 
     def add_bomb_to_board(self):
-        x, y = self.bomb.get_bomb_coords()
-        #TODO- this should end the game
         if not self.check_for_space():
-            return
-        if not self.board[x][y]:
-            #TODO- remove current bomb and add random new bomb
-        else:
-            self.board[x][y] = 'bomb'
+            return False
+        while True:
+            self.bomb = Bomb.Bomb()
+            x, y = self.bomb.get_bomb_coords()
+            if self.board[x][y] is not None:
+                continue
+            else:
+                self.board[x][y] = 'bomb'
+                return True
 
 
-    def add_apple_to_board(self):
-        while self.board.count('apple') < 3:
-            # TODO- this should end the game
+    def maintain_apples(self):
+        while len(self.apples_on_board) < 3:
             if not self.check_for_space():
-                return
-            x, y, score = self.add_apple
-            if not self.board[x][y]:
+                return False
+            apple = Apple.Apple()
+            x, y = apple.get_apple_coord()
+            score = apple.get_apple_score()
+            if self.board[x][y] is not None:
                 continue
             else:
                 self.board[x][y] = 'apple'
-                self.apples_on_board.append({(x, y) : score})
+                self.apples_on_board.append(apple)
+        return True
 
 
     def update_board(self, key_clicked=None):
@@ -138,6 +142,16 @@ class Board:
         if growing:
             # decrease by 1 the turns it has left to grow
             self.growing_turns_left -= 1
+        # update_bomb returns False if finished explosion, then creates a new bomb
+        if not self.bomb.update_bomb():
+            self.add_bomb_to_board()
+        if self.bomb.exploded:
+            self.explosion_expansion(self.bomb)
+            for apple in self.apples_on_board:
+                x, y = apple.get_apple_coord()
+                if self.board[x][y] = 'explosion':
+                    self.apples_on_board.remove(apple)
+                    self.maintain_apples()
         # check if the updated snake kept the game's rules. (or if he
         # ate an apple)
         if self.check_updated_snake():
@@ -149,50 +163,42 @@ class Board:
         return True
 
 
-    def check_2_activate_bomb(self):
-        if self.current_time >= self.max_time:
-            self.explosion_expansion()
-        else:
-            self.current_time += 1
-
-
-    def explosion_expansion(self):
-        if self.time_left <= 0:
-            if self.current_radius > self.max_radius:
-                #TODO- remove current bomb and add random new bomb
-                self.current_radius = 1
-            else:
-                radius = self.current_radius
-                x, y = self.bomb.get_bomb_coords
-                self.__explosion_helper(self, radius, x, y)
-                self.board[x][y] = None
-                self.current_radius += 1
+    def explosion_expansion(self, exploding_bomb):
+        r = exploding_bomb.current_radius
+        x, y = exploding_bomb.get_bomb_coords()
+        self.__explosion_helper(self, r, x, y)
 
 
     def __explosion_helper(self, radius, x, y):
         explosion_coords = []
         for i in range(radius + 1):
             for j in range(radius + 1):
-                if x + i + y + j == radius:
-                    if 0 < (x - i) < game_parameters.WIDTH and 0 < (y - j) < game_parameters.HEIGHT:
+                if i + j == radius:
+                    if 0 <= (x - i) < game_parameters.WIDTH and 0 <= (y - j) < game_parameters.HEIGHT:
                         explosion_coords.append((x - i, y - j))
-                    if 0 < (x - j) < game_parameters.WIDTH and 0 < (y - i) < game_parameters.HEIGHT:
+                    else:
+                        return False
+                    if 0 <= (x - j) < game_parameters.WIDTH and 0 <= (y - i) < game_parameters.HEIGHT:
                         explosion_coords.append((x - j, y - i))
-                if (x + i) < game_parameters.WIDTH and (y + j) < game_parameters.HEIGHT:
-                    if math.fabs(x - i) + math.fabs(y - j) == radius:
+                    else:
+                        return False
+                    if (x + i) < game_parameters.WIDTH and (y + j) < game_parameters.HEIGHT:
                         explosion_coords.append((x + i, y + j))
-                if (x + j) < game_parameters.WIDTH and (y + i) < game_parameters.HEIGHT:
-                    if math.fabs(x - j) + math.fabs(y - i) == radius:
+                    else:
+                        return False
+                    if (x + j) < game_parameters.WIDTH and (y + i) < game_parameters.HEIGHT:
                         explosion_coords.append((x + j, y + i))
-        if len(explosion_coords) < math.pow(2, radius + 1):
-            if radius != self.max_radius:
-                #TODO- remove this bomb and generate a new one
+                    else:
+                        return False
+                if i + j < radius:
+                    self.board[x + i][y +j], self.board[x - i][y - j] = None, None
+                    self.board[x + j][y + i], self.board[x - j][y - i] = None, None
         for coords in explosion_coords:
             x, y = coords
             if self.board[x][y] == 'snake':
                 #TODO- end game
             elif self.board[x][y] == 'apple':
-                #TODO- remove apple and make new apple
                 self.board[x][y] == 'explosion'
+                self.replace_apple(x, y)
             else:
                 self.board[x][y] == 'explosion'
