@@ -20,11 +20,11 @@ def main_loop(gd: GameDisplay) -> None:
         action_ok = board.update_board(key_clicked)
         if action_ok:
             # draw the graphics according to board state this turn
-            draw_graphics(board.get_board(), gd)
+            draw_graphics(board.get_board(), gd, board.total_score)
         gd.end_round()
 
 
-def draw_graphics(board, gd):
+def draw_graphics(board, gd, score):
     """This function draws thee game display's board according to internal
     board's properties"""
     # iterate over all cells in internal board
@@ -39,3 +39,4 @@ def draw_graphics(board, gd):
                 gd.draw_cell(x, y, 'red')
             elif board[x][y] == 'explosion':
                 gd.draw_cell(x, y, 'orange')
+    gd.show_score(score)

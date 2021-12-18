@@ -20,15 +20,7 @@ class Board:
         self.prev_snake = Snake.Snake()
         self.add_snake_to_board()
         # bomb object of the class Bomb
-        self.bomb = Bomb.Bomb()
-        # # max_time: time that current bomb explodes
-        # self.max_time = self.bomb.get_time()
-        # # time_left: the time of current bomb explosion reached
-        # self.current_time = 0
-        # # max_radius: max radius of the last bomb added to he board
-        # self.max_radius = self.bomb.get_radius()
-        # # current_radius: the radius current explosion reached
-        # self.current_radius = 0
+        self.add_bomb_to_board()
         # # list of all the apples on the board
         self.apples_on_board = []
         # Apples: ensure valid list of apples
@@ -86,8 +78,8 @@ class Board:
             x_apple, y_apple = apple.get_apple_coord()
             if x == x_apple and y == y_apple:
                 score = apple.get_apple_score()
+                self.total_score += score
                 self.apples_on_board.remove(apple)
-        self.total_score += score
         return self.maintain_apples()
 
     def get_board(self):
@@ -144,12 +136,15 @@ class Board:
             self.growing_turns_left -= 1
         # update_bomb returns False if finished explosion, then creates a new bomb
         if not self.bomb.update_bomb():
+            self.erase_explosion()
             self.add_bomb_to_board()
         if self.bomb.exploded:
-            self.explosion_expansion(self.bomb)
+            if not self.explosion_expansion(self.bomb):
+                self.erase_explosion()
+                self.add_bomb_to_board()
             for apple in self.apples_on_board:
                 x, y = apple.get_apple_coord()
-                if self.board[x][y] = 'explosion':
+                if self.board[x][y] == 'explosion':
                     self.apples_on_board.remove(apple)
                     self.maintain_apples()
         # check if the updated snake kept the game's rules. (or if he
@@ -166,39 +161,34 @@ class Board:
     def explosion_expansion(self, exploding_bomb):
         r = exploding_bomb.current_radius
         x, y = exploding_bomb.get_bomb_coords()
-        self.__explosion_helper(self, r, x, y)
+        return self.__explosion_helper(r, x, y)
 
 
     def __explosion_helper(self, radius, x, y):
-        explosion_coords = []
+        self.erase_explosion()
         for i in range(radius + 1):
             for j in range(radius + 1):
                 if i + j == radius:
-                    if 0 <= (x - i) < game_parameters.WIDTH and 0 <= (y - j) < game_parameters.HEIGHT:
-                        explosion_coords.append((x - i, y - j))
+                    if 0 <= (x + i) < game_parameters.WIDTH and 0 <= (y - j) < game_parameters.HEIGHT:
+                        self.board[x + i][y - j] = 'explosion'
                     else:
                         return False
-                    if 0 <= (x - j) < game_parameters.WIDTH and 0 <= (y - i) < game_parameters.HEIGHT:
-                        explosion_coords.append((x - j, y - i))
+                    if 0 <= (x - i) < game_parameters.WIDTH and 0 <= (y - j) < game_parameters.HEIGHT:
+                        self.board[x - i][y - j] = 'explosion'
                     else:
                         return False
                     if (x + i) < game_parameters.WIDTH and (y + j) < game_parameters.HEIGHT:
-                        explosion_coords.append((x + i, y + j))
+                        self.board[x + i][y + j] = 'explosion'
                     else:
                         return False
-                    if (x + j) < game_parameters.WIDTH and (y + i) < game_parameters.HEIGHT:
-                        explosion_coords.append((x + j, y + i))
+                    if (x - i) < game_parameters.WIDTH and (y + j) < game_parameters.HEIGHT:
+                        self.board[x - i][y + j] = 'explosion'
                     else:
                         return False
-                if i + j < radius:
-                    self.board[x + i][y +j], self.board[x - i][y - j] = None, None
-                    self.board[x + j][y + i], self.board[x - j][y - i] = None, None
-        for coords in explosion_coords:
-            x, y = coords
-            if self.board[x][y] == 'snake':
-                #TODO- end game
-            elif self.board[x][y] == 'apple':
-                self.board[x][y] == 'explosion'
-                self.replace_apple(x, y)
-            else:
-                self.board[x][y] == 'explosion'
+        return True
+
+    def erase_explosion(self):
+        for i in range(game_parameters.WIDTH):
+            for j in range(game_parameters.HEIGHT):
+                if self.board[i][j] == 'explosion':
+                    self.board[i][j] = None
