@@ -39,5 +39,3 @@ def draw_graphics(board, gd):
                 gd.draw_cell(x, y, 'red')
             elif board[x][y] == 'explosion':
                 gd.draw_cell(x, y, 'orange')
-
-
