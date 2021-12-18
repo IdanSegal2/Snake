@@ -7,7 +7,7 @@ class Snake:
         self.__body = [(10, 10), (10, 9), (10, 8)]
         # direction: the last move order the snake was given
         # can be either "up", "down", "right or "left.".
-        self.__direction = "up"
+        self.__direction = "Up"
 
     def get_direction(self):
         """This function returns a string with the snake's direction"""
@@ -27,13 +27,13 @@ class Snake:
 
         # add a new head (index 0) coordinate to the snake that corresponds
         # to the move direction
-        if direction == "up":
+        if direction == "Up":
             self.__insert_new_head(head_x, head_y+1)
-        if direction == "down":
+        if direction == "Down":
             self.__insert_new_head(head_x, head_y-1)
-        if direction == "right":
+        if direction == "Right":
             self.__insert_new_head(head_x+1, head_y)
-        if direction == "left":
+        if direction == "Left":
             self.__insert_new_head(head_x-1, head_y)
 
         # if the snake is not in a growing phase from eating:
@@ -60,14 +60,14 @@ class Snake:
 
         # check direction is not the opposite of current direction (legal)
         legal = True
-        if direction == 'up':
-            legal = self.__direction != 'down'
-        elif direction == 'down':
-            legal = self.__direction != 'up'
-        elif direction == 'right':
-            legal = self.__direction != 'left'
-        elif direction == 'left':
-            legal = self.__direction != 'right'
+        if direction == 'Up':
+            legal = self.__direction != 'Down'
+        elif direction == 'Down':
+            legal = self.__direction != 'Up'
+        elif direction == 'Right':
+            legal = self.__direction != 'Left'
+        elif direction == 'Left':
+            legal = self.__direction != 'Right'
 
         # if direction was given and is legal change the snake's direction.
         if given and legal:

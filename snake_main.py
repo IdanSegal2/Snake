@@ -1,14 +1,43 @@
 import game_parameters
+from Board import *
 from game_display import GameDisplay
 
+
 def main_loop(gd: GameDisplay) -> None:
+    """This is the main loop running the game"""
     gd.show_score(0)
-    x, y = 10, 10
-    while True:
+    # create the game board
+    board = Board()
+    # "action_ok" will be True if user actions are in agreement with the
+    # game rules (borders, away from bomb etc.) and False otherwise
+    action_ok = True
+    # loop while user actions ok and there's enough space to add objects
+    while board.check_for_space() and action_ok:
+        # get user click or None if there wasn't
         key_clicked = gd.get_key_clicked()
-        if (key_clicked == 'Left') and (x > 0):
-            x -= 1
-        elif (key_clicked == 'Right') and (x < game_parameters.WIDTH):
-            x += 1
-        gd.draw_cell(x, y, "red")
+        # update board according to click if action was ok (or change
+        # action ok to False and exit loop at the end of the round)
+        action_ok = board.update_board(key_clicked)
+        if action_ok:
+            # draw the graphics according to board state this turn
+            draw_graphics(board.get_board(), gd)
         gd.end_round()
+
+
+def draw_graphics(board, gd):
+    """This function draws thee game display's board according to internal
+    board's properties"""
+    # iterate over all cells in internal board
+    for x in range(game_parameters.WIDTH):
+        for y in range(game_parameters.HEIGHT):
+            # whenever encountering a known object, draw its color.
+            if board[x][y] == 'snake':
+                gd.draw_cell(x, y, 'black')
+            elif board[x][y] == 'apple':
+                gd.draw_cell(x, y, 'green')
+            elif board[x][y] == 'bomb':
+                gd.draw_cell(x, y, 'red')
+            elif board[x][y] == 'explosion':
+                gd.draw_cell(x, y, 'orange')
+
+
