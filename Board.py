@@ -174,6 +174,10 @@ class Board:
         return True
 
     def explosion_expansion(self, exploding_bomb):
+        """
+        :param exploding_bomb:
+        :return:
+        """
         r = exploding_bomb.current_radius
         x, y = exploding_bomb.get_bomb_coords()
         return self.__explosion_helper(r - 1, x, y)
