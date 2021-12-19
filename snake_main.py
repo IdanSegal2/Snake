@@ -11,6 +11,9 @@ def main_loop(gd: GameDisplay) -> None:
     # "action_ok" will be True if user actions are in agreement with the
     # game rules (borders, away from bomb etc.) and False otherwise
     action_ok = True
+    # end round after setup
+    draw_graphics(board.get_board(), gd, board.total_score)
+    gd.end_round()
     # loop while user actions ok and there's enough space to add objects
     while board.check_for_space() and action_ok:
         # get user click or None if there wasn't
@@ -18,9 +21,8 @@ def main_loop(gd: GameDisplay) -> None:
         # update board according to click if action was ok (or change
         # action ok to False and exit loop at the end of the round)
         action_ok = board.update_board(key_clicked)
-        if action_ok:
-            # draw the graphics according to board state this turn
-            draw_graphics(board.get_board(), gd, board.total_score)
+        # draw the graphics according to board state this turn
+        draw_graphics(board.get_board(), gd, board.total_score)
         gd.end_round()
 
 

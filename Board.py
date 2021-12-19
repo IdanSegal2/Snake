@@ -18,7 +18,7 @@ class Board:
         self.snake = Snake.Snake()
         # keep a deep copy of the old snake to compare moves later
         self.prev_snake = Snake.Snake()
-        self.add_snake_to_board()
+        self.add_snake_to_board(True)
         # bomb object of the class Bomb
         self.add_bomb_to_board()
         # # list of all the apples on the board
@@ -52,15 +52,17 @@ class Board:
         head_y = self.snake.get_coordinates()[0][1]
         # keep the coordinates of the tail of the snake before the move
         prev_tail = self.prev_snake.get_coordinates()[-1]
+        growing = self.growing_turns_left > 0
 
         # check if new head is where tail was before move & tail's leaving
         if self.growing_turns_left == 0 and prev_tail[0] == head_x \
                 and prev_tail[1] == head_y:
             return True
 
-        # if head is out of board return False
+        # if head is out of board return False after adding it to board
         elif head_x < 0 or head_x >= len(self.board) or head_y < 0 \
                 or head_y >= len(self.board[0]):
+            self.add_snake_to_board(growing)
             return False
 
         # if there's an apple on the new cell, add growing turns
@@ -71,8 +73,10 @@ class Board:
         elif not self.is_explosion_on_snake():
             return False
 
-        # if there's a bomb or another part of the snake, return False
-        elif self.board[head_x][head_y] is not None:
+        # if there's part of the snake, paint snake and return False
+        elif self.board[head_x][head_y] == 'snake':
+            if not growing:
+                self.add_snake_to_board(growing)
             return False
         # if succeeded return true
         return True
@@ -92,13 +96,18 @@ class Board:
 
     def add_snake_to_board(self, growing=False):
         """This function adds all of the snakes coordinate to the board"""
+        for coordinate in self.prev_snake.get_coordinates():
+            x = coordinate[0]
+            y = coordinate[1]
+            # if coordinate within snake boundaries
+            if (len(self.board) > x >= 0) and (len(self.board[0]) > y >= 0):
+                self.board[x][y] = None
         for coordinate in self.snake.get_coordinates():
             x = coordinate[0]
             y = coordinate[1]
-            self.board[x][y] = 'snake'
-        if not growing:
-            old_tail = self.prev_snake.get_coordinates()[-1]
-            self.board[old_tail[0]][old_tail[1]] = None
+            # if coordinate within snake boundaries
+            if (len(self.board) > x >= 0) and (len(self.board[0]) > y >= 0):
+                self.board[x][y] = 'snake'
 
     def add_bomb_to_board(self):
         if not self.check_for_space():
