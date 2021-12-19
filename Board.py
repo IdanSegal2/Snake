@@ -29,6 +29,8 @@ class Board:
         self.total_score = 0
         # explosion coordinates on the board
         self.explosion_coordinates = []
+        # coordinate of where the snake landed on explosion
+        self.snake_exploded = []
 
     def check_for_space(self):
         """This function returns True if there's space left at the board
@@ -164,6 +166,8 @@ class Board:
         if self.check_updated_snake():
             self.add_snake_to_board(growing)
         else:
+            self.add_snake_to_board(growing)
+            self.board[self.snake_exploded[0][0]][self.snake_exploded[0][1]] = 'explosion'
             return False
         # action succeeded. return True and update prev snake.
         self.prev_snake = copy.deepcopy(self.snake)
@@ -172,7 +176,7 @@ class Board:
     def explosion_expansion(self, exploding_bomb):
         r = exploding_bomb.current_radius
         x, y = exploding_bomb.get_bomb_coords()
-        return self.__explosion_helper(r, x, y)
+        return self.__explosion_helper(r - 1, x, y)
 
     def __explosion_helper(self, radius, x, y):
         self.erase_explosion()
@@ -211,5 +215,6 @@ class Board:
         for coord in self.snake.get_coordinates():
             x, y = coord
             if self.board[x][y] == 'explosion':
+                self.snake_exploded.append((x, y))
                 return False
         return True
