@@ -1,7 +1,7 @@
 import Snake, Apple, Bomb
-import game_parameters
 from game_display import *
-import math
+import copy
+
 
 class Board:
     def __init__(self):
@@ -69,8 +69,7 @@ class Board:
         # if there's a bomb or another part of the snake, return False
         elif self.board[head_x][head_y] is not None:
             return False
-        # if succeeded, set prev snake to current one and return true
-        self.prev_snake = self.snake
+        # if succeeded return true
         return True
 
     def replace_apple(self, x, y):
@@ -108,7 +107,6 @@ class Board:
                 self.board[x][y] = 'bomb'
                 return True
 
-
     def maintain_apples(self):
         while len(self.apples_on_board) < 3:
             if not self.check_for_space():
@@ -122,7 +120,6 @@ class Board:
                 self.board[x][y] = 'apple'
                 self.apples_on_board.append(apple)
         return True
-
 
     def update_board(self, key_clicked=None):
         """This function updates the board with new objects.
@@ -154,15 +151,14 @@ class Board:
         # otherwise player lost. return False
         else:
             return False
-        # action succeeded. return True.
+        # action succeeded. return True and update prev snake.
+        self.prev_snake = copy.deepcopy(self.snake)
         return True
-
 
     def explosion_expansion(self, exploding_bomb):
         r = exploding_bomb.current_radius
         x, y = exploding_bomb.get_bomb_coords()
         return self.__explosion_helper(r, x, y)
-
 
     def __explosion_helper(self, radius, x, y):
         self.erase_explosion()
