@@ -31,6 +31,8 @@ class Board:
         self.explosion_coordinates = []
         # coordinate of where the snake landed on explosion
         self.snake_exploded = []
+        # bool if snake hit border of board
+        self.snake_hit_border = False
 
     def check_for_space(self):
         """This function returns True if there's space left at the board
@@ -68,28 +70,46 @@ class Board:
             return False
 
         # if there's an apple on the new cell, add growing turns
+        # Also replaces apple, if no space left to put apple return False
         elif self.board[head_x][head_y] == 'apple':
             self.growing_turns_left += 3
             return self.replace_apple(head_x, head_y)
-
-        elif not self.is_explosion_on_snake():
-            return False
 
         # if there's part of the snake, paint snake and return False
         elif self.board[head_x][head_y] == 'snake':
             if not growing:
                 self.add_snake_to_board(growing)
+            self.snake_hit_border = True
             return False
+
+        # If snake moved to a coordinate where there is an explosion, return False
+        elif not self.is_explosion_on_snake():
+            return False
+
         # if succeeded return true
         return True
 
     def replace_apple(self, x, y):
+        """
+        Replaces apple if ate by snake or burned by explosion
+        :param x: x coordinate of head of snake or explosion
+        :param y: y coordinate of head of snake or explosion
+        :return: True if apple was replaced,
+        False if there was no place on board to replace apple
+        """
+        # iterates over all the apples currently on the board
         for apple in self.apples_on_board:
+            # gets apple on boards coordinates
             x_apple, y_apple = apple.get_apple_coord()
+            # if apple and snake or explosion coordinates are the same
             if x == x_apple and y == y_apple:
+                # gets apple's score
                 score = apple.get_apple_score()
+                # adds apple's score to total game score
                 self.total_score += score
+                # removes certain apple from the board
                 self.apples_on_board.remove(apple)
+        # generates new random apple and checks if space available
         return self.maintain_apples()
 
     def get_board(self):
@@ -112,8 +132,15 @@ class Board:
                 self.board[x][y] = 'snake'
 
     def add_bomb_to_board(self):
+        """
+        adds bomb to board at the beginning of the game
+        and after every explosion
+        :return: True if bomb added, False if no space on board to add bomb
+        """
+        # checks if there is available space to add bomb to board
         if not self.check_for_space():
             return False
+        # returns True when bomb is placed on board
         while True:
             self.bomb = Bomb.Bomb()
             x, y = self.bomb.get_bomb_coords()
@@ -124,15 +151,23 @@ class Board:
                 return True
 
     def maintain_apples(self):
+        """
+        places apple on board and makes sure there is always three on the board at a time
+        :return: True if there are 3 apples on the board, False otherwise
+        """
         while len(self.apples_on_board) < 3:
+            # checks for available space on board
             if not self.check_for_space():
                 return False
+            # generates random apple
             apple = Apple.Apple()
             x, y = apple.get_apple_coord()
             score = apple.get_apple_score()
+            # checks that apple was not generated on snake or bomb
             if self.board[x][y] is not None:
                 continue
             else:
+                # adds apple to board and places in apples_on_board list
                 self.board[x][y] = 'apple'
                 self.apples_on_board.append(apple)
         return True
@@ -151,10 +186,14 @@ class Board:
         if not self.bomb.update_bomb():
             self.erase_explosion()
             self.add_bomb_to_board()
+        # Checks what stage bomb explosion is at, True if bomb is exploding
         if self.bomb.exploded:
+            # If explosion_expansion returns False, adds new bomb to board
             if not self.explosion_expansion(self.bomb):
                 self.erase_explosion()
                 self.add_bomb_to_board()
+            # checks if apple was burned by explosion
+            # if burned, removes burned apple and adds new apple
             for apple in self.apples_on_board:
                 x, y = apple.get_apple_coord()
                 if self.board[x][y] == 'explosion':
@@ -166,8 +205,14 @@ class Board:
         if self.check_updated_snake():
             self.add_snake_to_board(growing)
         else:
-            self.add_snake_to_board(growing)
-            self.board[self.snake_exploded[0][0]][self.snake_exploded[0][1]] = 'explosion'
+            # checks if snake hit the border of the board
+            if self.snake_hit_border:
+                return False
+            # checks if explosion landed on snake
+            if not self.is_explosion_on_snake():
+                self.add_snake_to_board(growing)
+                self.board[self.snake_exploded[0][0]][self.snake_exploded[0][1]] = 'explosion'
+                return False
             return False
         # action succeeded. return True and update prev snake.
         self.prev_snake = copy.deepcopy(self.snake)
@@ -175,17 +220,25 @@ class Board:
 
     def explosion_expansion(self, exploding_bomb):
         """
-        :param exploding_bomb:
-        :return:
+        :param exploding_bomb: bomb's class with all the values
+        :return: True if explosion didn't hit border, False otherwise
         """
         r = exploding_bomb.current_radius
         x, y = exploding_bomb.get_bomb_coords()
         return self.__explosion_helper(r - 1, x, y)
 
     def __explosion_helper(self, radius, x, y):
+        """
+        :param radius: int of current explosion radius
+        :param x: int representing the bomb's original location for x coordinate
+        :param y: int representing the bomb's original location for y coordinate
+        :return: False if bomb can't make move, True otherwise
+        """
+        # erases previous explosion coordinates
         self.erase_explosion()
         for i in range(radius + 1):
             for j in range(radius + 1):
+                # checks if coordinates are the size of the radius
                 if i + j == radius:
                     if 0 <= (x + i) < game_parameters.WIDTH and 0 <= (y - j) < game_parameters.HEIGHT:
                         self.board[x + i][y - j] = 'explosion'
@@ -207,15 +260,21 @@ class Board:
                         self.explosion_coordinates.append((x - i, y + j))
                     else:
                         return False
+        # returns True if all coordinates are legal to place
         return True
 
     def erase_explosion(self):
+        """ erases places where explosion appeared in the last turn """
         for coord in self.explosion_coordinates:
             x, y = coord
             self.board[x][y] = None
         self.explosion_coordinates = []
 
     def is_explosion_on_snake(self):
+        """
+        Checks if snake moved to a coordinate where an explosion is happening
+        :return: True if snake didn't land on explosion, False otherwise
+        """
         for coord in self.snake.get_coordinates():
             x, y = coord
             if self.board[x][y] == 'explosion':
