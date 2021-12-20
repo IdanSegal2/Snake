@@ -67,9 +67,10 @@ class Board:
         elif head_x < 0 or head_x >= len(self.board) or head_y < 0 \
                 or head_y >= len(self.board[0]):
             self.add_snake_to_board(growing)
+            self.snake_hit_border = True
             return False
 
-        # if there's an apple on the new cell, add growing turns
+        # if there's an apple on the new coordinate, add growing turns
         # Also replaces apple, if no space left to put apple return False
         elif self.board[head_x][head_y] == 'apple':
             self.growing_turns_left += 3
@@ -79,7 +80,6 @@ class Board:
         elif self.board[head_x][head_y] == 'snake':
             if not growing:
                 self.add_snake_to_board(growing)
-            self.snake_hit_border = True
             return False
 
         # If snake moved to a coordinate where there is an explosion, return False
@@ -209,7 +209,7 @@ class Board:
             if self.snake_hit_border:
                 return False
             # checks if explosion landed on snake
-            if not self.is_explosion_on_snake():
+            elif not self.is_explosion_on_snake():
                 self.add_snake_to_board(growing)
                 self.board[self.snake_exploded[0][0]][self.snake_exploded[0][1]] = 'explosion'
                 return False
